@@ -5,7 +5,7 @@ import json, re, os
 
 PRICE_RE = re.compile(r'(||)\s?\d')
 
-def check_for_quickpicks(page: Page, timeout_ms=2500):
+def check_for_quickpicks(page: Page, timeout_ms:int=2500):
     quickpicks_list = page.locator(selector='#quickpicks-list')
     if not quickpicks_list.count() or not quickpicks_list:
         return False
@@ -15,13 +15,15 @@ def check_for_quickpicks(page: Page, timeout_ms=2500):
             expect(quickpicks_list).not_to_have_text('Loading...', timeout=timeout_ms)
         except TimeoutError:
             pass
-        qp_text = quickpicks_list.inner_text(timeout=timeout_ms)
     except Exception:
+        return False
+
+    qp_text = quickpicks_list.inner_text(timeout=timeout_ms)
 
     if PRICE_RE.search(qp_text):
         return True
 
-def parse_view_tickets(page: Page, timeout_ms=5000):
+def parse_view_tickets(page: Page, timeout_ms:int=5000):
     possible_ticks = page.get_by_test_id('reserveView')
     possible_ticks.wait_for(state='visible', timeout=timeout_ms)
 
@@ -39,7 +41,7 @@ def parse_view_tickets(page: Page, timeout_ms=5000):
 
     return False
 
-def check_for_find_tickets(page: Page, timeout_ms=12000):
+def check_for_find_tickets(page: Page, timeout_ms:int=12000):
     ticket_amt_selector = page.get_by_role('spinbutton').first
     find_tickets_button = page.get_by_role('button', name=re.compile(r'(find|buy) tickets', re.IGNORECASE))
     ticket_amt_selector.wait_for(state='visible', timeout=timeout_ms)
@@ -47,7 +49,7 @@ def check_for_find_tickets(page: Page, timeout_ms=12000):
         return False
 
     try:
-        set_spinbutton_qty(ticket_amt_selector, target=1, max_steps=10)
+        _ = set_spinbutton_qty(ticket_amt_selector, target=1, max_steps=10)
         try:
             expect(find_tickets_button).to_be_enabled(timeout=timeout_ms)
             find_tickets_button.click()
@@ -59,10 +61,10 @@ def check_for_find_tickets(page: Page, timeout_ms=12000):
     except Exception as e:
         return False
 
-def set_spinbutton_qty(locator: Locator, target=1, max_steps=20, timeout_ms=5000):
-    locator.wait_for(staate='visible', timeout=timeout_ms)
+def set_spinbutton_qty(locator: Locator, target:int=1, max_steps:int=20, timeout_ms:int=5000):
+    locator.wait_for(state='visible', timeout=timeout_ms)
 
-    def convert_aria_to_int(attr, default=0):
+    def convert_aria_to_int(attr:str, default:int=0):
         val = locator.get_attribute(attr)
         try:
             return int(val) if val is not None else default
@@ -73,20 +75,24 @@ def set_spinbutton_qty(locator: Locator, target=1, max_steps=20, timeout_ms=5000
 
     locator.focus()
     steps = 0
-    while (curr_val is None or curr_val < target) and steps < maxsteps:
+    while (curr_val == 0 or curr_val < target) and steps < max_steps:
         locator.press('ArrowUp')
         curr_val = convert_aria_to_int('aria-valuenow', curr_val)
         steps += 1
 
     return curr_val
 
-def fetch_tm_event(event_url: str, timeout_ms=12000):
+def fetch_tm_event(event_url: str, timeout_ms:int=12000):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(locale='en-IE', timezone_id='Europe/Dublin')
         page = context.new_page()
 
-        page.goto(url=event_url, wait_until='domcontentloaded', timeout=timeout_ms)
+        page_response = page.goto(url=event_url, wait_until='domcontentloaded', timeout=timeout_ms)
+        page_status = page_response.status if page_response else 404
+
+        if page_status == 404:
+            return False
 
         head = page.content()[:1000].lower()
         if '"response": "identify"' in head or "captcha" in head or "virtual queue" in head:
@@ -111,4 +117,19 @@ def fetch_tm_event(event_url: str, timeout_ms=12000):
 
         return False
 
+KNEECAP_URL = "https://www.ticketmaster.ie/kneecap-co-kerry-12-12-2025/event/1800630E87681051"
+EP_URL = "https://www.ticketmaster.ie/electric-picnic-2026-weekend-camping-co-laois-28-08-2026/event/18006314BD813D3E"
+EP_AVAIL_URL = "https://www.ticketmaster.ie/electric-picnic-2026-early-entry-pass-co-laois-27-08-2026/event/18006314E36BAC7B"
+urls = [KNEECAP_URL, EP_URL, EP_AVAIL_URL]
 
+def _run_one(url:str):
+    return url, fetch_tm_event(url)
+
+if __name__ == '__main__':
+    max_workers = min(4, (os.cpu_count() or 2))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as pool:
+        futures = [pool.submit(_run_one, url) for url in urls]
+        for future in concurrent.futures.as_completed(futures):
+            url, result = future.result()
+
+            print(url, ': ', json.dumps(result, indent=2))
