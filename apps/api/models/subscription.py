@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, override
-from ..extensions import db
+from ..db import Base
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from .user import User
     from .event import Event
 
-class Subscription(db.Model):
+class Subscription(Base):
     __tablename__ = 'subscriptions'
     __table_args__ = (
         UniqueConstraint('user_id', 'event_id', name='uq_subscriptions_user_event'),

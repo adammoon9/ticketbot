@@ -1,12 +1,12 @@
 from typing import override, TYPE_CHECKING
-from ..extensions import db
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from ..db import Base
 
 if TYPE_CHECKING:
     from .subscription import Subscription
 
-class User(db.Model):
+class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
