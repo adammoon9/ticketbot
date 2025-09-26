@@ -1,6 +1,5 @@
-from playwright.sync_api import Locator, Page, TimeoutError, sync_playwright, expect
-import concurrent.futures
-import json, re, os
+from playwright.sync_api import Browser, TimeoutError, Page, Locator, expect
+import re
 
 PRICE_RE = re.compile(r"(€|£|\$)\s?\d")
 
@@ -93,78 +92,49 @@ def set_spinbutton_qty(
     return curr_val
 
 
-def fetch_tm_event(event_url: str, timeout_ms: int = 12000):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(locale="en-IE", timezone_id="Europe/Dublin")
-            page = context.new_page()
+def fetch_tm_event(browser: Browser, event_url: str, timeout_ms: int = 12000):
+    context = browser.new_context(locale="en-IE", timezone_id="Europe/Dublin")
+    page = context.new_page()
+    try:
+        page_response = page.goto(
+            url=event_url, wait_until="domcontentloaded", timeout=timeout_ms
+        )
+        page_status = page_response.status if page_response else 404
 
-            page_response = page.goto(
-                url=event_url, wait_until="domcontentloaded", timeout=timeout_ms
-            )
-            page_status = page_response.status if page_response else 404
-
-            if page_status == 404:
-                return False
-
-            head = page.content()[:1200].lower()
-            if (
-                "'response': 'identify'" in head
-                or "captcha" in head
-                or "virtual queue" in head
-            ):
-                browser.close()
-                return
-
-            for sel in [
-                'button:has-text("Accept")',
-                'button:has-text("Accept all")',
-                'button:has-text("Accept Cookies")',
-                'button:has-text("I agree")',
-            ]:
-                try:
-                    page.click(sel, timeout=timeout_ms)
-                    break
-                except Exception:
-                    pass
-
-            if check_for_quickpicks(page=page):
-                return True
-
-            if check_for_find_tickets(page=page):
-                return True
-
+        if page_status == 404:
             return False
-        finally:
+
+        head = page.content()[:1200].lower()
+        if (
+            "'response': 'identify'" in head
+            or "captcha" in head
+            or "virtual queue" in head
+        ):
+            browser.close()
+            return
+
+        for sel in [
+            'button:has-text("Accept")',
+            'button:has-text("Accept all")',
+            'button:has-text("Accept Cookies")',
+            'button:has-text("I agree")',
+        ]:
             try:
-                context.close()
+                page.click(sel, timeout=timeout_ms)
+                break
             except Exception:
                 pass
-            browser.close()
 
+        if check_for_quickpicks(page=page):
+            return True
 
-KNEECAP_URL = (
-    "https://www.ticketmaster.ie/kneecap-co-kerry-12-12-2025/event/1800630E87681051"
-)
-EP_URL = "https://www.ticketmaster.ie/electric-picnic-2026-weekend-camping-co-laois-28-08-2026/event/18006314BD813D3E"
-EP_AVAIL_URL = "https://www.ticketmaster.ie/electric-picnic-2026-early-entry-pass-co-laois-27-08-2026/event/18006314E36BAC7B"
-urls = [
-    EP_URL,
-    EP_AVAIL_URL,
-    "https://www.ticketmaster.ie/damien-dempsey-cork-05-12-2025/event/180062E7E2896714",
-]
+        if check_for_find_tickets(page=page):
+            return True
 
-
-def _run_one(url: str):
-    return url, fetch_tm_event(url)
-
-
-if __name__ == "__main__":
-    max_workers = min(4, (os.cpu_count() or 2))
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as pool:
-        futures = [pool.submit(_run_one, url) for url in urls]
-        for future in concurrent.futures.as_completed(futures):
-            url, result = future.result()
-
-            print(url, ": ", json.dumps(result, indent=2))
+        return False
+    finally:
+        try:
+            context.close()
+        except Exception:
+            pass
+        browser.close()
