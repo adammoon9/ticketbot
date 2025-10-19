@@ -1,0 +1,13 @@
+FROM python:3.13-slim-trixie
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --group checker --group checker-prod
+
+RUN uv run playwright install --with-deps chromium
+
+COPY ./apps ./apps
+
+CMD ["uv", "run", "celery", "-A", "apps.checker.celery", "worker", "--loglevel=info"]

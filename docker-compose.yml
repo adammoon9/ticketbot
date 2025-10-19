@@ -1,0 +1,91 @@
+services:
+  web:
+    container_name: fastapi-webapp
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: on-failure
+    command: uv run uvicorn apps.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - PORT=8000
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/health || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  db:
+    image: postgres:18
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=p4ssw0rd
+      - POSTGRES_DB=ticketbot
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  checker:
+    build:
+      context: .
+      dockerfile: Dockerfile.checker
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.beat
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      checker:
+        condition: service_started
+    restart: on-failure
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: no
+
+volumes:
+  postgres_data:

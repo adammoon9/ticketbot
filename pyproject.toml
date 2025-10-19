@@ -1,0 +1,44 @@
+[project]
+name = "ticketbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+
+[dependency-groups]
+web = [
+    "fastapi>=0.118.3",
+    "pydantic[email]>=2.12.0",
+    "sqlalchemy>=2.0.43",
+    "uvicorn>=0.37.0",
+]
+web-prod = [
+    "psycopg2-binary>=2.9.11",
+]
+checker = [
+    "playwright>=1.55.0",
+    "sqlalchemy>=2.0.43",
+    "celery",
+    "redis",
+]
+checker-prod = [
+    "psycopg2-binary"
+]
+beat = [
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "psycopg2-binary"
+]
+dev = [
+    "coverage>=7.10.7",
+    "pytest>=8.4.2",
+    "psycopg2"
+]
+lint = [
+    "ruff>=0.14.0",
+]
+migrate = [
+    "alembic>=1.16.5",
+    "psycopg2-binary"
+]
