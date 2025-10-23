@@ -3,6 +3,8 @@ from logging.config import fileConfig
 from alembic import context
 
 from apps.api.db import engine, Base
+# Import all models so Alembic can detect them
+from apps.api.models import user, event, subscription
 
 
 # this is the Alembic Config object, which provides

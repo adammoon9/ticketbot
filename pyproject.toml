@@ -13,10 +13,10 @@ web = [
     "uvicorn>=0.37.0",
 ]
 web-prod = [
-    "psycopg2-binary>=2.9.11",
+    "psycopg2-binary",
 ]
 checker = [
-    "playwright>=1.55.0",
+    "playwright",
     "sqlalchemy>=2.0.43",
     "celery",
     "redis",
@@ -28,12 +28,14 @@ beat = [
     "celery",
     "redis",
     "sqlalchemy",
-    "psycopg2-binary"
+    "psycopg2-binary",
+    "playwright"
 ]
 dev = [
     "coverage>=7.10.7",
     "pytest>=8.4.2",
-    "psycopg2"
+    "psycopg2-binary",
+    "httpx"
 ]
 lint = [
     "ruff>=0.14.0",

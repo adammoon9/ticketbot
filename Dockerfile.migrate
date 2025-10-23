@@ -10,4 +10,4 @@ COPY ./apps ./apps
 COPY ./alembic ./alembic
 COPY ./alembic.ini ./alembic.ini
 
-CMD ["uv", "run", "alembic", "upgrade", "head"]
+CMD ["uv", "run", "--no-sync","alembic", "upgrade", "head"]

@@ -17,7 +17,7 @@ class Subscription(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     event_id: Mapped[int] = mapped_column(ForeignKey('events.id', ondelete='CASCADE'), nullable=False)
-    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('1'))
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
 
     # relationships
     user: Mapped['User'] = relationship('User', back_populates='subscriptions', foreign_keys=user_id)

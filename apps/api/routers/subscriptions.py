@@ -27,7 +27,7 @@ def get_subscriptions_all(db: Session = Depends(get_session)):
     subscriptions = db.query(Subscription).all()
     if not subscriptions:
         raise HTTPException(status_code=404, detail="No subscriptions found.")
-
+    
     return subscriptions
 
 

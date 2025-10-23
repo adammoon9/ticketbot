@@ -8,7 +8,7 @@ services:
     command: uv run uvicorn apps.api.main:app --host 0.0.0.0 --port 8000
     environment:
       - PORT=8000
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:p4ssw0rd@db:5432/ticketbot
     ports:
       - "8000:8000"
     depends_on:
@@ -53,7 +53,7 @@ services:
       context: .
       dockerfile: Dockerfile.checker
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:p4ssw0rd@db:5432/ticketbot
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
@@ -68,7 +68,7 @@ services:
       context: .
       dockerfile: Dockerfile.beat
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:p4ssw0rd@db:5432/ticketbot
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
@@ -81,7 +81,7 @@ services:
       context: .
       dockerfile: Dockerfile.migrate
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg://postgres:p4ssw0rd@db:5432/ticketbot
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:p4ssw0rd@db:5432/ticketbot
     depends_on:
       db:
         condition: service_healthy

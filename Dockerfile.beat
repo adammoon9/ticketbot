@@ -5,7 +5,8 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --group beat
+# RUN uv run --no-sync playwright install --with-deps chromium
 
 COPY ./apps ./apps
 
-CMD ["uv", "run", "celery", "-A", "apps.checker.celery", "beat", "--loglevel=info"]
+CMD ["uv", "run", "--no-sync", "celery", "-A", "apps.checker.celery", "beat", "--loglevel=info"]

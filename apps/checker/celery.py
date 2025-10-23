@@ -1,7 +1,6 @@
 import os
 from ..api.db import SessionLocal
-from ..api.models.event import Event
-from ..api.models.subscription import Subscription
+from ..api.models import Subscription, User, Event
 from .check_event import fetch_tm_event
 from contextlib import contextmanager
 from playwright.sync_api import Playwright, Browser, sync_playwright
@@ -101,7 +100,7 @@ def pool_subscriptions() -> None:
             event_obj = db.query(Event).filter_by(id=e_id).one_or_none()
             if (
                 not event_obj
-                or datetime.now(tz=timezone.utc) <= event_obj.next_checked_at
+                or datetime.now(tz=timezone.utc) <= event_obj.next_checked_at.astimezone(timezone.utc)
             ):
                 continue
 
